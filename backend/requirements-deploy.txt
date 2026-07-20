@@ -10,3 +10,4 @@ soundfile
 joblib
 pandas
 ucimlrepo
+geonamescache

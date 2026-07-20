@@ -580,18 +580,49 @@ def generate_evidence(payload: dict) -> dict:
 # ---------------------------------------------------------------------------
 # Geospatial agent — fraud/seizure hotspot map
 # ---------------------------------------------------------------------------
-# MVP: offline lookup of known Indian cybercrime hotspot districts (Jamtara,
-# Mewat/Nuh, Bharatpur, Alwar are real, well-documented scam hubs) plus major
-# metros for seizure/complaint locations. No external geocoding API needed,
-# so the demo has no network dependency and can't fail live.
+# Two-layer lookup:
+#   1. Curated hotspot list — small districts with a specific documented
+#      fraud story (Jamtara, Mewat/Nuh, Bharatpur, Alwar are real, widely
+#      reported scam-call/mule-account hubs) that a generic city dataset
+#      either omits (too small/rural) or doesn't carry the same weight for.
+#      Takes priority so this framing is never silently overridden.
+#   2. geonamescache (bundled offline dataset, no network dependency at
+#      runtime — the demo can't fail on a bad connection) — ~3,700 Indian
+#      cities/towns, ~19,000 lookup keys once alternate spellings are
+#      included (Bangalore/Bengaluru, Gurgaon/Gurugram, etc.), covering
+#      anywhere in the country the curated list doesn't name explicitly.
+import unicodedata
+import geonamescache
+
+
+def _strip_accents(s: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFKD", s) if not unicodedata.combining(c))
+
+
 _LOCATION_COORDS = {
     "jamtara": (23.9600, 86.8100), "mewat": (28.0800, 77.0000), "nuh": (28.1100, 77.0000),
     "bharatpur": (27.2200, 77.4900), "alwar": (27.5500, 76.6300),
-    "delhi": (28.6139, 77.2090), "mumbai": (19.0760, 72.8777), "bengaluru": (12.9716, 77.5946),
-    "kolkata": (22.5726, 88.3639), "chennai": (13.0827, 80.2707), "hyderabad": (17.3850, 78.4867),
-    "pune": (18.5204, 73.8567), "ahmedabad": (23.0225, 72.5714), "jaipur": (26.9124, 75.7873),
-    "lucknow": (26.8467, 80.9462), "chandigarh": (30.7333, 76.7794), "patna": (25.5941, 85.1376),
+    "patiala": (30.3398, 76.3869),
 }
+
+_gc = geonamescache.GeonamesCache()
+_INDIA_CITY_LOOKUP: dict = {}
+for _v in _gc.get_cities().values():
+    if _v["countrycode"] != "IN":
+        continue
+    _key = _strip_accents(_v["name"]).strip().lower()
+    _INDIA_CITY_LOOKUP.setdefault(_key, (_v["latitude"], _v["longitude"]))
+    for _alt in _v.get("alternatenames", []):
+        _akey = _strip_accents(_alt).strip().lower()
+        _INDIA_CITY_LOOKUP.setdefault(_akey, (_v["latitude"], _v["longitude"]))
+
+
+def geocode(location: str):
+    """(lat, lon) for any recognised Indian location, or None."""
+    key = _strip_accents(location).strip().lower()
+    if key in _LOCATION_COORDS:
+        return _LOCATION_COORDS[key]
+    return _INDIA_CITY_LOOKUP.get(key)
 
 
 # Explicit complaint counter, separate from the graph. Linking a Location
@@ -602,8 +633,8 @@ _complaint_counts: dict = {}
 
 
 def log_complaint(location: str) -> dict:
-    key = location.strip().lower()
-    if key not in _LOCATION_COORDS:
+    key = _strip_accents(location).strip().lower()
+    if geocode(location) is None:
         return {"error": f"'{location}' is not a recognised location"}
     _complaint_counts[key] = _complaint_counts.get(key, 0) + 1
     _save_state()
@@ -621,15 +652,15 @@ def geo_heatmap() -> dict:
     for node, data in _graph.nodes(data=True):
         if data.get("type") != "Location":
             continue
-        key = node.strip().lower()
-        coords = _LOCATION_COORDS.get(key)
+        key = _strip_accents(node).strip().lower()
+        coords = geocode(node)
         if coords is None:
             continue
         agg[key] = {"name": node, "lat": coords[0], "lon": coords[1],
                      "linked_entities": _graph.degree[node], "complaint_count": _complaint_counts.get(key, 0)}
 
     for key, count in _complaint_counts.items():
-        coords = _LOCATION_COORDS.get(key)
+        coords = geocode(key)
         if coords is None:
             continue
         if key in agg:
