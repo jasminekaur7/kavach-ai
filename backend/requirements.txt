@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+python-multipart
+opencv-python-headless
+numpy
+scikit-learn==1.8.0
+networkx
+librosa
+soundfile
+joblib
+pandas
+ucimlrepo
+easyocr

@@ -1,0 +1,37 @@
+# ---- Node / frontend ----
+node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/build/
+
+# ---- Python / backend ----
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+
+# ---- Runtime-generated data (not source) ----
+backend/evidence/*.json
+!backend/evidence/.gitkeep
+
+# ---- EasyOCR model weights (large, auto-downloaded on first run) ----
+backend/easyocr_models/
+backend/.EasyOCR/
+**/EasyOCR/model/
+*.pth
+
+# ---- Secrets / environment ----
+.env
+.env.local
+*.pem
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.vscode/
+*.log

@@ -1,0 +1,1 @@
+{"graph": {"directed": false, "multigraph": false, "graph": {}, "nodes": [{"type": "PhoneNumber", "id": "8958656985"}, {"type": "Location", "id": "Patiala"}], "edges": [{"relation": "used_in", "source": "8958656985", "target": "Patiala"}]}, "complaints": {}}

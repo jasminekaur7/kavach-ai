@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+evidence/*.json
+server.log
+.git/
+# EasyOCR model weights (~98MB) — unused in the deployed lean build, see
+# Dockerfile comment. Keep these locally for the full 3-stage demo.
+models/

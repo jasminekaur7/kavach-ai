@@ -1,0 +1,447 @@
+:root {
+  /* Base — warm charcoal-brown, not indigo-blue */
+  --ink: #14100c;
+  --panel: #1e1811;
+  --panel-raised: #251e15;
+  --line: #3d2f22;
+  --line-soft: #2a2018;
+
+  /* Text — warm parchment instead of stark white */
+  --paper: #ece7da;
+  --muted: #a89a86;
+  --faint: #6b5f52;
+
+  /* Signature accent — brass/hologram-foil, replaces generic cyan */
+  --brass: #c79a4a;
+  --brass-dim: #8a6d38;
+
+  /* Verdict colors — muted seal-green / sindoor-red, not neon */
+  --verified: #4c9a6a;
+  --verified-dim: #2e5c40;
+  --alert: #c1432b;
+  --alert-dim: #7a2a1c;
+
+  --display: 'Fraunces', 'Georgia', serif;
+  --devanagari: 'Noto Serif Devanagari', serif;
+  --body: 'Inter', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(199, 154, 74, 0.07), transparent),
+    radial-gradient(ellipse 700px 500px at 100% 0%, rgba(76, 154, 106, 0.05), transparent),
+    var(--ink);
+  color: var(--paper);
+  font-family: var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+
+.shell { min-height: 100vh; }
+
+/* ---------------------------------------------------------------------- */
+/* Header — letterhead / official-emblem treatment                        */
+/* ---------------------------------------------------------------------- */
+.topbar {
+  padding: 22px 32px 0;
+  border-bottom: 1px solid var(--line);
+  position: relative;
+}
+
+.topbar::after {
+  /* security-thread accent: a thin dashed brass line running the width of the header */
+  content: '';
+  display: block;
+  height: 3px;
+  margin-top: 18px;
+  background: repeating-linear-gradient(
+    90deg, var(--brass) 0px, var(--brass) 10px, transparent 10px, transparent 18px
+  );
+  opacity: 0.55;
+}
+
+.brand { display: flex; align-items: center; gap: 14px; padding-bottom: 4px; }
+
+.brand-seal {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid var(--brass);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+.brand-seal::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 1px dashed var(--brass-dim);
+}
+.brand-mark {
+  color: var(--brass);
+  font-family: var(--devanagari);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+.brand-name {
+  font-family: var(--display);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  font-size: 21px;
+  color: var(--paper);
+}
+.brand-name .accent { color: var(--brass); font-style: italic; }
+.brand-tagline {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-top: 2px;
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  padding: 10px 18px;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.tab:hover { color: var(--paper); }
+.tab.active { color: var(--brass); border-bottom-color: var(--brass); }
+
+.stage { display: flex; justify-content: center; padding: 56px 24px 80px; }
+
+.panel { width: 560px; }
+.panel.wide { width: 960px; }
+
+.intel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 24px;
+}
+@media (max-width: 900px) {
+  .intel-grid { grid-template-columns: 1fr; }
+  .panel.wide { width: 100%; max-width: 560px; }
+}
+
+.section-label {
+  font-size: 12px;
+  color: var(--brass);
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0 0 10px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 10px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.legend span { display: flex; align-items: center; gap: 6px; }
+.legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+.ring-list { display: flex; flex-direction: column; gap: 10px; }
+.ring-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  padding: 12px 16px;
+}
+.ring-title { font-family: var(--display); font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+.ring-detail { color: var(--muted); font-family: var(--mono); font-size: 11.5px; margin-top: 2px; }
+
+h1 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 30px;
+  margin: 0 0 8px;
+  color: var(--paper);
+  letter-spacing: -0.01em;
+}
+.sub { color: var(--muted); margin: 0 0 30px; line-height: 1.6; font-size: 14.5px; max-width: 46ch; }
+
+.field-label {
+  display: block;
+  color: var(--brass);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 20px 0 8px;
+}
+.field-label:first-of-type { margin-top: 0; }
+
+/* ---------------------------------------------------------------------- */
+/* Dropzone — scanner-viewfinder treatment with corner brackets           */
+/* ---------------------------------------------------------------------- */
+.dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 220px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  cursor: pointer;
+  overflow: hidden;
+  background: var(--panel);
+  position: relative;
+  font-family: var(--mono);
+  font-size: 13px;
+  transition: border-color 0.15s ease;
+}
+.dropzone::before,
+.dropzone::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--brass-dim);
+  transition: border-color 0.15s ease;
+}
+.dropzone::before { top: 8px; left: 8px; border-right: none; border-bottom: none; }
+.dropzone::after { bottom: 8px; right: 8px; border-left: none; border-top: none; }
+.dropzone:hover { border-color: var(--line); }
+.dropzone:hover::before,
+.dropzone:hover::after { border-color: var(--brass); }
+.preview { max-height: 100%; max-width: 100%; object-fit: contain; position: relative; z-index: 1; }
+
+.textarea {
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--paper);
+  padding: 16px;
+  font-family: var(--mono);
+  font-size: 13.5px;
+  resize: vertical;
+}
+.textarea:focus, .dropzone:focus-within { outline: 1.5px solid var(--brass); outline-offset: 1px; }
+
+.primary {
+  margin-top: 18px;
+  background: var(--brass);
+  color: var(--ink);
+  border: none;
+  padding: 12px 26px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--body);
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  transition: background 0.15s ease;
+}
+.primary:hover:not(:disabled) { background: #d9ac5e; }
+.primary:disabled { opacity: 0.5; cursor: default; }
+.primary:focus-visible { outline: 2px solid var(--paper); outline-offset: 2px; }
+
+.status {
+  color: var(--brass);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  margin-top: 14px;
+  letter-spacing: 0.03em;
+}
+.status::before { content: '◈ '; }
+
+/* ---------------------------------------------------------------------- */
+/* Verdict — the signature moment: a seal stamp (verified) or a hazard-   */
+/* striped alert card (suspicious/counterfeit/scam), not a generic box    */
+/* ---------------------------------------------------------------------- */
+.verdict {
+  margin-top: 28px;
+  padding: 22px 22px 22px 26px;
+  background: var(--panel-raised);
+  border: 1px solid var(--line);
+  position: relative;
+}
+
+.verdict.ok {
+  border-color: var(--verified-dim);
+  border-left: 3px solid var(--verified);
+}
+.verdict.ok::before {
+  /* rotated dashed seal ring, floating near the label, wax-stamp style */
+  content: '';
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 1.5px dashed var(--verified);
+  transform: rotate(-8deg);
+  opacity: 0.55;
+}
+
+.verdict.bad {
+  border-color: var(--alert-dim);
+  border-left: 3px solid var(--alert);
+  background:
+    repeating-linear-gradient(
+      -45deg, transparent 0px, transparent 10px, rgba(193, 67, 43, 0.05) 10px, rgba(193, 67, 43, 0.05) 20px
+    ),
+    var(--panel-raised);
+}
+
+.verdict-label {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.verdict.ok .verdict-label { color: var(--verified); }
+.verdict.bad .verdict-label { color: var(--alert); }
+.verdict-conf {
+  color: var(--muted);
+  font-family: var(--mono);
+  margin-top: 6px;
+  font-size: 12.5px;
+}
+.verdict-reason {
+  color: var(--muted);
+  font-family: var(--mono);
+  margin-top: 12px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.verdict-breakdown {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.link-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 26px;
+  align-items: center;
+}
+.link-form input, .link-form select {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--paper);
+  padding: 10px 12px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+}
+.link-form input:focus, .link-form select:focus { outline: 1.5px solid var(--brass); outline-offset: 1px; }
+.arrow { color: var(--brass); }
+
+.graph-svg {
+  width: 100%;
+  height: 420px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.edge { stroke: var(--line); stroke-width: 1.5; }
+.node-label { fill: var(--paper); font-family: var(--mono); font-size: 11px; }
+
+/* ---------------------------------------------------------------------- */
+/* Background motifs — hand-drawn fraud/security line-art, fixed & faint  */
+/* ---------------------------------------------------------------------- */
+.shell {
+  position: relative;
+  /* guilloché texture: fine repeating wavy lines, like currency security print */
+  background-image:
+    repeating-linear-gradient(115deg, rgba(199,154,74,0.035) 0px, rgba(199,154,74,0.035) 1px, transparent 1px, transparent 14px),
+    repeating-linear-gradient(65deg, rgba(199,154,74,0.025) 0px, rgba(199,154,74,0.025) 1px, transparent 1px, transparent 18px);
+}
+.bg-motifs {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.motif {
+  position: absolute;
+  color: var(--brass-dim);
+  opacity: 0.10;
+}
+.scan-beam {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 140px;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(to bottom, transparent, rgba(199,154,74,0.05), transparent);
+  animation: scan-sweep 9s linear infinite;
+}
+@keyframes scan-sweep {
+  0%   { top: -140px; }
+  100% { top: 100%; }
+}
+
+/* Everything that isn't decorative sits above the motif layer */
+.topbar, .stage { position: relative; z-index: 1; }
+
+/* ---------------------------------------------------------------------- */
+/* Motion — panel mount animation, verdict stamp-in, scroll reveal        */
+/* ---------------------------------------------------------------------- */
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes stamp-in {
+  0%   { opacity: 0; transform: scale(0.94); }
+  60%  { opacity: 1; transform: scale(1.015); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.panel {
+  animation: reveal-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.verdict {
+  animation: stamp-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.ring-card {
+  animation: reveal-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.reveal-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+  .reveal { opacity: 1 !important; transform: none !important; }
+}

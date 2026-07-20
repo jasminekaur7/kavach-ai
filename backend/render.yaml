@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: kavach-ai-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /docs
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
