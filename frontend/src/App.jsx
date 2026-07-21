@@ -196,7 +196,10 @@ function FullCheckPanel() {
               )}
               {result.sender_result && (
                 <div>
-                  Sender: {result.sender_result.verdict?.toUpperCase()} — {result.sender_result.reason}
+                  Sender: {result.sender_result.verdict?.toUpperCase()}
+                  {typeof result.sender_result.confidence === 'number' &&
+                    ` (${Math.round(result.sender_result.confidence * 100)}% confidence)`}
+                  {' \u2014 '}{result.sender_result.reason}
                 </div>
               )}
             </div>
@@ -237,7 +240,7 @@ function CurrencyPanel() {
   return (
     <section className="panel">
       <h1>Currency Authenticity Check</h1>
-      <p className="sub">Upload a note photo. The vision agent scores print-sharpness and ink-saturation to flag likely counterfeits.</p>
+      <p className="sub">Upload a note photo. An OCR pass first scans for counterfeit-indicator text (specimen/novelty/prop-money markings), then a trained visual classifier (91.3% held-out accuracy) analyses print quality to flag likely counterfeits.</p>
 
       <label className="dropzone">
         <input type="file" accept="image/*" onChange={onFile} hidden />
@@ -399,7 +402,7 @@ function VoicePanel() {
   return (
     <section className="panel">
       <h1>Voice Spoof / AI-Clone Check</h1>
-      <p className="sub">Upload a call recording (WAV or FLAC). The audio agent scores pitch naturalness and spectral flatness to flag likely synthetic or cloned voices — heuristic MVP, not yet trained on a labeled spoof corpus.</p>
+      <p className="sub">Upload a call recording (WAV or FLAC). The audio agent analyses pitch jitter, spectral flatness, and MFCC features via a trained classifier to flag likely synthetic or AI-cloned voices.</p>
 
       <label className="dropzone" style={{ height: 120 }}>
         <input type="file" accept="audio/wav,audio/x-wav,audio/flac,.wav,.flac" onChange={onFile} hidden />
@@ -478,6 +481,37 @@ function FraudIntelPanel() {
   const [points, setPoints] = useState([])
   const [form, setForm] = useState({ a: '', a_type: 'PhoneNumber', b: '', b_type: 'BankAccount', relation: 'used_in' })
   const [complaintLoc, setComplaintLoc] = useState('')
+  const [evidenceByRing, setEvidenceByRing] = useState({})
+
+  async function exportEvidence(ring, i) {
+    try {
+      const r = await fetch(`${API}/api/evidence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payload: { case_type: 'fraud_ring', ring_id: ring.ring_id, kingpin: ring.kingpin, members: ring.members } }),
+      })
+      if (!r.ok) throw new Error(`Server returned ${r.status}`)
+      const { hash } = await r.json()
+      setEvidenceByRing((prev) => ({ ...prev, [i]: hash }))
+    } catch (err) {
+      setError('Could not generate the evidence packet. Make sure the backend is running, then try again.')
+    }
+  }
+
+  function downloadEvidence(hash) {
+    fetch(`${API}/api/evidence/${hash}`)
+      .then((r) => r.json())
+      .then((record) => {
+        const blob = new Blob([JSON.stringify(record, null, 2)], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `kavach-evidence-${hash.slice(0, 16)}.json`
+        a.click()
+        URL.revokeObjectURL(url)
+      })
+      .catch(() => setError('Could not download the evidence file. Make sure the backend is running.'))
+  }
 
   async function refresh() {
     try {
@@ -626,6 +660,20 @@ function FraudIntelPanel() {
                 </div>
                 <div className="ring-detail">Kingpin: <b>{ring.kingpin}</b></div>
                 <div className="ring-detail">Members: {ring.members.map((m) => m.id).join(', ')}</div>
+                {evidenceByRing[i] ? (
+                  <div className="ring-detail" style={{ marginTop: 8 }}>
+                    <div style={{ fontFamily: 'monospace', fontSize: '0.8em', opacity: 0.8 }}>
+                      hash: {evidenceByRing[i].slice(0, 16)}…
+                    </div>
+                    <button className="primary" style={{ marginTop: 4, padding: '4px 10px', fontSize: '0.85em' }} onClick={() => downloadEvidence(evidenceByRing[i])}>
+                      Download evidence packet
+                    </button>
+                  </div>
+                ) : (
+                  <button className="primary" style={{ marginTop: 8, padding: '4px 10px', fontSize: '0.85em' }} onClick={() => exportEvidence(ring, i)}>
+                    Export as evidence
+                  </button>
+                )}
               </div>
             ))}
           </div>

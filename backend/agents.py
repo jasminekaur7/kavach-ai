@@ -417,29 +417,78 @@ def check_scam_text(text: str) -> dict:
 # Sender-reputation agent — is the source (domain / email / phone) sketchy?
 # ---------------------------------------------------------------------------
 # MVP: offline heuristic checks, no external API (keeps the demo reliable
-# with no network dependency). Three checks fused into one verdict:
-#   1. Brand-impersonation domains — a well-known brand name appears in the
+# with no network dependency). Checks fused into one verdict, each carrying
+# an honest confidence score rather than a flat safe/suspicious label:
+#   1. Curated official domains across major Indian consumer sectors
+#      (e-commerce, fashion, electronics, telecom, food delivery, travel,
+#      payments, banking, insurance, streaming, government) — researched
+#      and verified, including domains that changed recently (e.g. the
+#      Feb-2025 JioCinema/Disney+Hotstar merger now resolves to
+#      jiohotstar.com, not the old hotstar.com).
+#   2. Two RBI/government-exclusive TLD rules rather than an ever-growing
+#      per-brand list: ".bank.in"/".fin.in" (RBI-mandated, IDRBT-verified,
+#      closed registry since Oct 2025) and ".gov.in"/".nic.in" (Indian
+#      government TLDs — directly relevant here since fake "CBI/police"
+#      digital-arrest scams almost never use the real government domain).
+#   3. Brand-impersonation domains — a well-known brand name appears in the
 #      sender domain, but the domain itself isn't the brand's real domain
 #      (e.g. "ajioin.in" containing "ajio" but not being ajio.com).
 #      Leetspeak substitutions (0->o, 1->i, 3->e, 4->a, 5->s, 7->t, @->a)
 #      are normalised first so "amaz0n-offers.in" is still caught.
-#   2. Disposable / throwaway email domains — commonly used to send phishing
+#   4. Disposable / throwaway email domains — commonly used to send phishing
 #      at scale since they're free and instantly discarded.
-#   3. Invalid / non-standard Indian mobile numbers — valid Indian mobiles
-#      are 10 digits starting 6-9; numbers that don't fit that pattern (or
-#      carry known premium/international scam prefixes) are flagged.
+#   5. Invalid / non-standard Indian mobile numbers — valid Indian mobiles
+#      are 10 digits starting 6-9; numbers that don't fit that pattern are
+#      flagged, though format validity alone is a weaker signal (a fake
+#      caller can still use a correctly-formatted number), reflected in a
+#      lower confidence score than an outright domain/TLD match.
 # Swap for a real API (e.g. a phone/domain reputation service) if you want
 # live, continuously-updated blocklists instead of this curated seed list.
 _LEET_TABLE = str.maketrans({"0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "@": "a"})
 
 _LEGIT_DOMAINS = {
-    "ajio.com", "amazon.in", "amazon.com", "flipkart.com", "myntra.com",
-    "sbi.co.in", "onlinesbi.sbi", "icicibank.com", "hdfcbank.com",
-    "paytm.com", "irctc.co.in", "swiggy.com", "zomato.com", "meesho.com",
+    # e-commerce / marketplaces
+    "amazon.in", "amazon.com", "flipkart.com", "meesho.com", "snapdeal.com", "tatacliq.com",
+    # fashion / beauty
+    "ajio.com", "myntra.com", "nykaa.com", "nykaafashion.com", "limeroad.com", "bewakoof.com",
+    "hm.com", "zara.com", "uniqlo.com", "purplle.com",
+    # electronics / appliances
+    "croma.com", "reliancedigital.in", "vijaysales.com", "samsung.com", "lg.com",
+    "apple.com", "mi.com", "oneplus.in", "boat-lifestyle.com",
+    # telecom
+    "jio.com", "myjio.com", "airtel.in", "airtel.com", "vi.com", "myvi.in", "bsnl.co.in", "bsnl.in",
+    # food delivery / grocery / quick-commerce
+    "swiggy.com", "zomato.com", "blinkit.com", "zeptonow.com", "bigbasket.com", "jiomart.com",
+    # travel
+    "irctc.co.in", "makemytrip.com", "goibibo.com", "cleartrip.com", "yatra.com", "ixigo.com",
+    "redbus.in", "oyorooms.com",
+    # payments / fintech
+    "paytm.com", "phonepe.com", "pay.google.com", "mobikwik.com", "freecharge.in", "cred.club",
+    # banking (specific historic domains; .bank.in covered generically below)
+    "sbi.co.in", "onlinesbi.sbi", "icicibank.com", "hdfcbank.com", "axisbank.com", "kotak.com",
+    "pnbindia.in", "bankofbaroda.in", "yesbank.in", "idfcfirstbank.com",
+    # insurance
+    "licindia.in", "hdfcergo.com", "icicilombard.com", "policybazaar.com", "bajajallianz.com", "tataaig.com",
+    # streaming / OTT
+    "netflix.com", "primevideo.com", "jiohotstar.com", "hotstar.com", "sonyliv.com", "zee5.com",
+    # ride-hailing / logistics
+    "uber.com", "olacabs.com", "rapido.bike", "delhivery.com", "bluedart.com", "dtdc.in",
+    # real estate
+    "99acres.com", "magicbricks.com", "housing.com", "nobroker.in",
 }
 _BRAND_NAMES = [
-    "ajio", "amazon", "flipkart", "myntra", "sbi", "icici", "hdfc",
-    "paytm", "irctc", "swiggy", "zomato", "meesho",
+    "amazon", "flipkart", "meesho", "snapdeal", "tatacliq",
+    "ajio", "myntra", "nykaa", "limeroad", "bewakoof",
+    "croma", "reliancedigital", "vijaysales", "boat",
+    "jio", "airtel", "vodafone",
+    "swiggy", "zomato", "blinkit", "zepto", "bigbasket", "jiomart",
+    "irctc", "makemytrip", "goibibo", "cleartrip", "yatra", "ixigo", "redbus", "oyo",
+    "paytm", "phonepe", "mobikwik", "freecharge",
+    "sbi", "icici", "hdfc", "axisbank", "kotak", "pnb", "bankofbaroda", "yesbank", "idfcfirst",
+    "lic", "policybazaar", "bajajallianz",
+    "netflix", "hotstar", "jiohotstar", "sonyliv", "zee5",
+    "uber", "olacabs", "rapido",
+    "99acres", "magicbricks", "nobroker",
 ]
 _DISPOSABLE_EMAIL_DOMAINS = {
     "mailinator.com", "10minutemail.com", "guerrillamail.com", "tempmail.com",
@@ -449,7 +498,11 @@ _SUSPICIOUS_TLDS = {".xyz", ".top", ".club", ".info", ".online", ".site", ".icu"
 
 
 def check_sender(identifier: str) -> dict:
-    """Classify a sender identifier (domain/URL, email, or phone number)."""
+    """Classify a sender identifier (domain/URL, email, or phone number).
+    Every verdict carries a confidence score (0-1) reflecting how strong the
+    underlying signal actually is, rather than a flat safe/suspicious label —
+    an exact match against a verified domain is far more certain than an
+    unrecognised domain simply not matching any known red flag."""
     s = identifier.strip().lower()
     s = re.sub(r"^https?://", "", s).split("/")[0]  # strip scheme + path if a URL was pasted
 
@@ -458,27 +511,50 @@ def check_sender(identifier: str) -> dict:
     if re.fullmatch(r"(\+?91)?\d{10}", digits) and "@" not in s and not any(c.isalpha() for c in s):
         local = digits[-10:]
         if local[0] in "6789":
-            return {"type": "phone", "verdict": "safe", "reason": "valid Indian mobile number format"}
-        return {"type": "phone", "verdict": "suspicious", "reason": "does not match standard Indian mobile prefix (6-9)"}
+            return {"type": "phone", "verdict": "safe", "confidence": 0.6,
+                     "reason": "valid Indian mobile number format (format-only check — a scam caller can still use a correctly-formatted number)"}
+        return {"type": "phone", "verdict": "suspicious", "confidence": 0.85,
+                 "reason": "does not match standard Indian mobile prefix (6-9)"}
 
     # --- email ---
     if "@" in s:
         email_domain = s.split("@")[-1]
         if email_domain in _DISPOSABLE_EMAIL_DOMAINS:
-            return {"type": "email", "verdict": "suspicious", "reason": f"'{email_domain}' is a known disposable/throwaway email provider"}
+            return {"type": "email", "verdict": "suspicious", "confidence": 0.95,
+                     "reason": f"'{email_domain}' is a known disposable/throwaway email provider"}
         return check_sender(email_domain) | {"type": "email"}
 
     # --- domain / URL ---
     normalized = s.translate(_LEET_TABLE)
     if normalized in _LEGIT_DOMAINS or s in _LEGIT_DOMAINS:
-        return {"type": "domain", "verdict": "safe", "reason": "matches known official domain"}
+        return {"type": "domain", "verdict": "safe", "confidence": 0.97,
+                 "reason": "matches a verified official domain"}
+    # RBI mandated all Indian banks migrate to the exclusive ".bank.in" domain
+    # (NBFCs/fintechs to ".fin.in") by 31 Oct 2025; IDRBT is the sole registrar
+    # and only RBI-authorised institutions can register under it, so any
+    # subdomain of these two TLDs is a strong legitimacy signal rather than a
+    # brand-impersonation red flag — e.g. "icici.bank.in" is ICICI's real,
+    # current domain, not a lookalike, even though it contains "icici".
+    if normalized.endswith(".bank.in") or normalized.endswith(".fin.in"):
+        return {"type": "domain", "verdict": "safe", "confidence": 0.95,
+                 "reason": "uses the RBI-exclusive .bank.in/.fin.in domain, reserved for IDRBT-verified financial institutions"}
+    # .gov.in / .nic.in are exclusive to Indian government bodies (registered
+    # only via NIC) — directly relevant here since digital-arrest scams
+    # impersonating "CBI"/"police"/"customs" almost always use a look-alike
+    # domain rather than the real, gated government TLD.
+    if normalized.endswith(".gov.in") or normalized.endswith(".nic.in"):
+        return {"type": "domain", "verdict": "safe", "confidence": 0.95,
+                 "reason": "uses the .gov.in/.nic.in domain, exclusive to verified Indian government bodies"}
     for brand in _BRAND_NAMES:
         if brand in normalized:
-            return {"type": "domain", "verdict": "suspicious", "reason": f"contains brand name '{brand}' but is not that brand's official domain — likely impersonation"}
+            return {"type": "domain", "verdict": "suspicious", "confidence": 0.9,
+                     "reason": f"contains brand name '{brand}' but is not that brand's official domain — likely impersonation"}
     for tld in _SUSPICIOUS_TLDS:
         if normalized.endswith(tld):
-            return {"type": "domain", "verdict": "suspicious", "reason": f"uses low-cost/high-abuse TLD '{tld}' commonly seen in phishing links"}
-    return {"type": "domain", "verdict": "unverified", "reason": "no known brand reference or red flag found; not on our verified list"}
+            return {"type": "domain", "verdict": "suspicious", "confidence": 0.75,
+                     "reason": f"uses low-cost/high-abuse TLD '{tld}' commonly seen in phishing links"}
+    return {"type": "domain", "verdict": "unverified", "confidence": 0.35,
+             "reason": "not on our verified list and no red flag found either — insufficient signal to call it safe or suspicious"}
 
 
 # ---------------------------------------------------------------------------
@@ -576,6 +652,16 @@ def generate_evidence(payload: dict) -> dict:
     path = _EVIDENCE_DIR / f"{digest[:16]}.json"
     path.write_text(json.dumps(record, indent=2))
     return {"hash": digest, "file": str(path)}
+
+
+def get_evidence(evidence_hash: str) -> dict:
+    """Retrieve a previously generated evidence packet by its hash prefix,
+    so the frontend can offer it as an actual downloadable file rather than
+    just showing the hash."""
+    path = _EVIDENCE_DIR / f"{evidence_hash[:16]}.json"
+    if not path.exists():
+        return {"error": "evidence not found"}
+    return json.loads(path.read_text())
 
 # ---------------------------------------------------------------------------
 # Geospatial agent — fraud/seizure hotspot map

@@ -67,7 +67,8 @@ def full_check(body: CombinedIn):
         pct = round((text_result.get("confidence") or 0) * 100)
         flags.append(f"the message text matches known scam patterns ({pct}% confidence)")
     if sender_result and sender_result.get("verdict") not in ("safe", None):
-        flags.append(f"the sender looks suspicious \u2014 {sender_result.get('reason')}")
+        sc = round((sender_result.get("confidence") or 0) * 100)
+        flags.append(f"the sender looks suspicious ({sc}% confidence) \u2014 {sender_result.get('reason')}")
 
     if not text_result and not sender_result:
         overall = "unknown"
@@ -120,3 +121,8 @@ def complaint(body: ComplaintIn):
 @app.post("/api/evidence")
 def evidence(body: EvidenceIn):
     return agents.generate_evidence(body.payload)
+
+
+@app.get("/api/evidence/{evidence_hash}")
+def evidence_lookup(evidence_hash: str):
+    return agents.get_evidence(evidence_hash)
