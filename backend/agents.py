@@ -446,6 +446,32 @@ def check_scam_text(text: str) -> dict:
 # live, continuously-updated blocklists instead of this curated seed list.
 _LEET_TABLE = str.maketrans({"0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "@": "a"})
 
+import socket
+
+
+def _domain_resolves(domain: str, timeout: float = 2.0):
+    """Best-effort LIVE DNS check for a domain that matched nothing in the
+    curated/pattern-based checks above. Returns True (resolves), False
+    (doesn't resolve — NXDOMAIN, a real red flag for anything claiming to be
+    an active brand), or None if the check itself couldn't complete (no
+    network, DNS server unreachable, timeout). None is deliberately treated
+    as "unknown", never as a verdict either way, so a flaky connection
+    during a live demo can never turn into a false accusation — this is a
+    confidence *booster* on top of the offline checks, not a replacement
+    for them, and every other check above still runs with zero network
+    dependency."""
+    old_timeout = socket.getdefaulttimeout()
+    try:
+        socket.setdefaulttimeout(timeout)
+        socket.gethostbyname(domain)
+        return True
+    except socket.gaierror:
+        return False
+    except Exception:
+        return None
+    finally:
+        socket.setdefaulttimeout(old_timeout)
+
 _LEGIT_DOMAINS = {
     # e-commerce / marketplaces
     "amazon.in", "amazon.com", "flipkart.com", "meesho.com", "snapdeal.com", "tatacliq.com",
@@ -468,7 +494,8 @@ _LEGIT_DOMAINS = {
     "sbi.co.in", "onlinesbi.sbi", "icicibank.com", "hdfcbank.com", "axisbank.com", "kotak.com",
     "pnbindia.in", "bankofbaroda.in", "yesbank.in", "idfcfirstbank.com",
     # insurance
-    "licindia.in", "hdfcergo.com", "icicilombard.com", "policybazaar.com", "bajajallianz.com", "tataaig.com",
+    "licindia.in", "hdfcergo.com", "icicilombard.com", "policybazaar.com", "bajajallianz.com",
+    "tataaig.com", "axismaxlife.com", "sbilife.co.in", "hdfclife.com", "iciciprulife.com",
     # streaming / OTT
     "netflix.com", "primevideo.com", "jiohotstar.com", "hotstar.com", "sonyliv.com", "zee5.com",
     # ride-hailing / logistics
@@ -485,7 +512,7 @@ _BRAND_NAMES = [
     "irctc", "makemytrip", "goibibo", "cleartrip", "yatra", "ixigo", "redbus", "oyo",
     "paytm", "phonepe", "mobikwik", "freecharge",
     "sbi", "icici", "hdfc", "axisbank", "kotak", "pnb", "bankofbaroda", "yesbank", "idfcfirst",
-    "lic", "policybazaar", "bajajallianz",
+    "lic", "policybazaar", "bajajallianz", "axismaxlife", "maxlife", "sbilife", "hdfclife", "iciciprulife",
     "netflix", "hotstar", "jiohotstar", "sonyliv", "zee5",
     "uber", "olacabs", "rapido",
     "99acres", "magicbricks", "nobroker",
@@ -505,6 +532,7 @@ def check_sender(identifier: str) -> dict:
     unrecognised domain simply not matching any known red flag."""
     s = identifier.strip().lower()
     s = re.sub(r"^https?://", "", s).split("/")[0]  # strip scheme + path if a URL was pasted
+    s = re.sub(r"^www\.", "", s)  # "www.jio.com" must match "jio.com" in the verified list, not fall through to the brand-impersonation check
 
     # --- phone number ---
     digits = re.sub(r"\D", "", s)
@@ -553,8 +581,18 @@ def check_sender(identifier: str) -> dict:
         if normalized.endswith(tld):
             return {"type": "domain", "verdict": "suspicious", "confidence": 0.75,
                      "reason": f"uses low-cost/high-abuse TLD '{tld}' commonly seen in phishing links"}
+
+    # Nothing in the offline curated/pattern checks matched either way —
+    # attempt one live DNS lookup as a last resort before giving up.
+    resolves = _domain_resolves(normalized)
+    if resolves is False:
+        return {"type": "domain", "verdict": "suspicious", "confidence": 0.7,
+                 "reason": "live DNS lookup found no such domain — likely fake, inactive, or mistyped"}
+    if resolves is True:
+        return {"type": "domain", "verdict": "unverified", "confidence": 0.45,
+                 "reason": "domain is live and resolves, but is not on our verified brand list — a real, active site, though we can't confirm who actually runs it, so stay cautious with any payment or OTP request"}
     return {"type": "domain", "verdict": "unverified", "confidence": 0.35,
-             "reason": "not on our verified list and no red flag found either — insufficient signal to call it safe or suspicious"}
+             "reason": "not on our verified list and no red flag found either — insufficient signal to call it safe or suspicious (live check unavailable)"}
 
 
 # ---------------------------------------------------------------------------
