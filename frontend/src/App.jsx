@@ -240,7 +240,7 @@ function CurrencyPanel() {
   return (
     <section className="panel">
       <h1>Currency Authenticity Check</h1>
-      <p className="sub">Upload a note photo. An OCR pass first scans for counterfeit-indicator text (specimen/novelty/prop-money markings), then a trained visual classifier (91.3% held-out accuracy) analyses print quality to flag likely counterfeits.</p>
+      <p className="sub">Upload a note photo. An OCR pass first scans for counterfeit-indicator text (specimen/novelty/prop-money markings), then a trained visual classifier analyses print quality to flag likely counterfeits.</p>
 
       <label className="dropzone">
         <input type="file" accept="image/*" onChange={onFile} hidden />
